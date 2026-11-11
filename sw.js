@@ -1,5 +1,5 @@
 const APP_PREFIX = "vuln-triage";
-const CACHE_VERSION = "16";
+const CACHE_VERSION = "17";
 const CACHE = `${APP_PREFIX}-${CACHE_VERSION}`;
 
 const APP_SHELL = [
