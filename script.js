@@ -278,6 +278,7 @@ const vulnerableCommitInput = $("vulnerable-commit");
 const fixedCommitInput = $("fixed-commit");
 const applyButton = $("apply");
 const applyStatus = $("apply-status");
+const deleteAdvisoryButton = $("delete-advisory");
 const toastEl = $("toast");
 
 const fixList = $("fix-examples");
@@ -1066,26 +1067,52 @@ $("generate-ast-patterns").onclick = () => generatePatterns("ast");
 // The static build keeps the run in demo mode, so no backend result is invented.
 const startPipeline = (advisory) => ({advisory, demo: true});
 
-const applyAdvisory = () => {
+const hasDraftContent = () =>
+    [
+        draft.cve,
+        draft.cwe,
+        draft.title,
+        draft.description,
+        draft.sourceProject,
+        draft.vulnerableCommit,
+        draft.fixedCommit,
+    ].some((value) => value.trim()) ||
+    draft.fixExamples.some(
+        (pair) => pair.vulnerable.trim() || pair.fixed.trim(),
+    ) ||
+    draft.projects.some((project) => project.value.trim()) ||
+    draft.codePatterns.some((pattern) => pattern.value.trim()) ||
+    draft.astPatterns.some((pattern) => pattern.value.trim()) ||
+    draft.slices.some((slice) => slice.value.trim());
+
+const saveAdvisory = () => {
     const now = Date.now();
-    const saved = clone(draft);
-
-    if (!saved.id) {
-        saved.id = newId();
-        saved.created = now;
+    if (!draft.id) {
+        draft.id = newId();
+        draft.created = now;
     }
-    saved.updated = now;
+    draft.updated = now;
 
+    const saved = clone(draft);
     const index = advisories.findIndex((item) => item.id === saved.id);
     if (index >= 0) advisories[index] = saved;
     else advisories.push(saved);
     saveAdvisories();
+    renderHistory();
+    advisoryHeading.textContent = "Edit advisory";
+    return saved;
+};
 
+const autoSaveAdvisory = () => {
+    if (draft.id || hasDraftContent()) saveAdvisory();
+};
+
+const applyAdvisory = () => {
+    const saved = saveAdvisory();
     draft = clone(saved);
     ensureRows(draft);
     lastLookupCve = draft.cve.trim().toUpperCase();
     renderAdvisory();
-    renderHistory();
 
     const patterns =
         saved.codePatterns.filter((item) => item.value.trim()).length +
@@ -1100,6 +1127,23 @@ const applyAdvisory = () => {
 };
 
 applyButton.onclick = applyAdvisory;
+
+deleteAdvisoryButton.onclick = () => {
+    const wasSaved = !!draft.id;
+    if (wasSaved) {
+        advisories = advisories.filter((item) => item.id !== draft.id);
+        saveAdvisories();
+        renderHistory();
+    }
+
+    draft = blankAdvisory();
+    lastLookupCve = "";
+    applyStatus.textContent = "";
+    renderPage("advisory");
+    toast(wasSaved ? "Advisory deleted." : "Advisory cleared.");
+};
+
+pages.advisory.addEventListener("focusout", autoSaveAdvisory);
 
 const historyItemHtml = (advisory) => {
     const meta = [];

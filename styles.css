@@ -2315,6 +2315,17 @@ textarea.input:focus {
     min-height: 16px;
 }
 
+.delete-advisory {
+    display: block;
+    width: 100%;
+    padding: 10px;
+    border: 0;
+    background: none;
+    font-size: 14px;
+    font-weight: 600;
+    text-align: center;
+}
+
 /* Fix examples */
 .fix-pair {
     display: flex;
