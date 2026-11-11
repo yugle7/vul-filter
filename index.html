@@ -1,0 +1,238 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0, shrink-to-fit=no, interactive-widget=resizes-content"/>
+    <meta name="mobile-web-app-capable" content="yes"/>
+    <meta name="theme-color" content="#f7f6f4" media="(prefers-color-scheme: light)"/>
+    <meta name="theme-color" content="#2a2a2a" media="(prefers-color-scheme: dark)"/>
+    <meta name="msapplication-config" content="none">
+
+    <title>Vulnerability Triage</title>
+
+    <link rel="manifest" href="manifest.json"/>
+    <link rel="stylesheet" href="styles.css"/>
+
+    <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+    <link rel="icon" type="image/svg+xml" href="favicon.svg"/>
+    <link rel="apple-touch-icon" href="icons/icon-192.png">
+</head>
+<body>
+
+<!-- ==========================================================================
+     ADVISORY
+     ========================================================================== -->
+
+<section id="advisory-page" class="page">
+    <div class="page-head">
+        <div>
+            <h1 id="advisory-heading">New advisory</h1>
+            <p class="page-sub">Describe the vulnerability and configure candidate selection.</p>
+        </div>
+        <button id="new-advisory" class="btn small" type="button" title="New advisory"
+                aria-label="New advisory">
+            <svg>
+                <use href="sprite.svg#plus"></use>
+            </svg>
+            New
+        </button>
+    </div>
+
+    <div class="col gap-20">
+        <section aria-labelledby="details-heading">
+            <div class="section-title">
+                <h2 id="details-heading">Vulnerability details</h2>
+            </div>
+
+            <div class="card form">
+                <div class="form-row">
+                    <label class="field">
+                        <span class="label">CVE</span>
+                        <input id="cve" class="input code-font" placeholder="CVE-2021-44228"
+                               autocomplete="off" autocapitalize="characters" spellcheck="false"
+                               aria-describedby="cve-help">
+                    </label>
+                    <label class="field">
+                        <span class="label">CWE</span>
+                        <input id="cwe" class="input" placeholder="CWE-502, CWE-917"
+                               autocomplete="off" spellcheck="false">
+                    </label>
+                </div>
+                <p id="cve-help" class="field-help">
+                    Multiple CWE identifiers are separated by commas. Indexed CVEs fill CWE automatically.
+                </p>
+
+                <label class="field">
+                    <span class="label">Title</span>
+                    <textarea id="title" class="input auto-grow title-input" rows="1"
+                              placeholder="Short vulnerability name" aria-label="Title"></textarea>
+                </label>
+
+                <label class="field">
+                    <span class="label">Description</span>
+                    <textarea id="description" class="input auto-grow" rows="2"
+                              placeholder="What is vulnerable and under which conditions?"
+                              aria-label="Description"></textarea>
+                </label>
+
+                <div class="field">
+                    <span class="label">Severity</span>
+                    <div id="severity" class="segment" style="--n:4;--i:1">
+                        <button type="button" data-severity="low">Low</button>
+                        <button type="button" data-severity="medium" class="active">Medium</button>
+                        <button type="button" data-severity="high">High</button>
+                        <button type="button" data-severity="critical">Critical</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section aria-labelledby="fix-heading">
+            <div class="section-title">
+                <h2 id="fix-heading">Fix examples</h2>
+                <span class="help">Vulnerable and fixed code pairs</span>
+            </div>
+            <div id="fix-examples" class="stack"></div>
+        </section>
+
+        <section aria-labelledby="projects-heading">
+            <div class="section-title">
+                <h2 id="projects-heading">Evaluation projects</h2>
+                <span class="help">Repositories used to evaluate patterns</span>
+            </div>
+            <div class="card">
+                <div id="evaluation-projects" class="stack"></div>
+                <p class="field-help">Every pattern is measured against this project set.</p>
+            </div>
+        </section>
+
+        <section aria-labelledby="code-patterns-heading">
+            <div class="section-title">
+                <h2 id="code-patterns-heading">Vulnerable code regex patterns</h2>
+                <div class="section-title-actions">
+                    <span class="pill pill-gray plain"
+                          title="Counts are generated locally in this build. Connect the pipeline API for real evaluation.">Demo</span>
+                    <button id="generate-code-patterns" class="btn small" type="button">
+                        <svg>
+                            <use href="sprite.svg#pattern"></use>
+                        </svg>
+                        Generate Regexes
+                    </button>
+                </div>
+            </div>
+            <div id="code-patterns" class="stack"></div>
+        </section>
+
+        <section aria-labelledby="ast-patterns-heading">
+            <div class="section-title">
+                <h2 id="ast-patterns-heading">Vulnerable AST regex patterns</h2>
+                <div class="section-title-actions">
+                    <span class="pill pill-gray plain"
+                          title="Counts are generated locally in this build. Connect the pipeline API for real evaluation.">Demo</span>
+                    <button id="generate-ast-patterns" class="btn small" type="button">
+                        <svg>
+                            <use href="sprite.svg#layers"></use>
+                        </svg>
+                        Generate AST Regexes
+                    </button>
+                </div>
+            </div>
+            <div id="ast-patterns" class="stack"></div>
+        </section>
+
+        <section aria-labelledby="snippets-heading">
+            <div class="section-title">
+                <h2 id="snippets-heading">Vulnerable code snippets</h2>
+                <div class="section-title-actions">
+                    <span class="pill pill-gray plain"
+                          title="Counts are generated locally in this build. Connect the pipeline API for real evaluation.">Demo</span>
+                </div>
+            </div>
+            <div id="code-snippets" class="stack"></div>
+            <p class="field-help">
+                Code slices for semantic search, sent with the advisory and evaluated against the project set.
+            </p>
+        </section>
+
+        <div class="apply-block">
+            <button id="apply" class="btn primary block" type="button">
+                Apply
+            </button>
+            <p class="field-help center">Saves this advisory and starts the candidate-selection pipeline.</p>
+            <p id="apply-status" class="help tiny center" aria-live="polite"></p>
+        </div>
+    </div>
+</section>
+
+<!-- ==========================================================================
+     HISTORY
+     ========================================================================== -->
+
+<section id="history-page" class="page hidden">
+    <div class="page-head">
+        <div>
+            <h1>History</h1>
+            <p class="page-sub">Saved advisories, newest first. Open one to edit it and run the pipeline again.</p>
+        </div>
+        <button id="new-advisory-history" class="btn small" type="button" title="New advisory"
+                aria-label="New advisory">
+            <svg>
+                <use href="sprite.svg#plus"></use>
+            </svg>
+            New
+        </button>
+    </div>
+
+    <div class="search-field history-search">
+        <svg>
+            <use href="sprite.svg#search"></use>
+        </svg>
+        <input id="history-search" class="input" type="text" autocomplete="off" spellcheck="false"
+               enterkeyhint="search" placeholder="Search name, CVE, CWE"
+               aria-label="Search history by name, CVE, or CWE">
+        <button id="history-search-clear" class="history-search-clear hidden" type="button"
+                title="Clear search" aria-label="Clear search">
+            <svg>
+                <use href="sprite.svg#close"></use>
+            </svg>
+        </button>
+    </div>
+
+    <div class="history-filter">
+        <span id="history-severity-label" class="label">Severity</span>
+        <div id="history-severity" class="chips" role="group"
+             aria-labelledby="history-severity-label">
+            <button class="chip" type="button" data-severity="low" aria-pressed="false">Low</button>
+            <button class="chip" type="button" data-severity="medium" aria-pressed="false">Medium</button>
+            <button class="chip" type="button" data-severity="high" aria-pressed="false">High</button>
+            <button class="chip" type="button" data-severity="critical" aria-pressed="false">Critical</button>
+        </div>
+    </div>
+
+    <div id="history-list" class="case-list"></div>
+</section>
+
+<nav id="nav-bar" aria-label="Main navigation">
+    <div id="nav" style="grid-template-columns: repeat(2, minmax(0, 1fr));">
+        <button id="nav-advisory" data-page="advisory" class="active" aria-current="page">
+            <svg>
+                <use href="sprite.svg#cases"></use>
+            </svg>
+            <span>Advisory</span>
+        </button>
+        <button id="nav-history" data-page="history">
+            <svg>
+                <use href="sprite.svg#clock"></use>
+            </svg>
+            <span>History</span>
+        </button>
+    </div>
+</nav>
+
+<div id="toast" role="status" aria-live="polite" hidden></div>
+
+<script src="script.js"></script>
+
+</body>
+</html>
