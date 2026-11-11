@@ -2321,8 +2321,7 @@ textarea.input:focus {
     padding: 10px;
     border: 0;
     background: none;
-    font-size: 14px;
-    font-weight: 600;
+    font-size: 16px;
     text-align: center;
 }
 
