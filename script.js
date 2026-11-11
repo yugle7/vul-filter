@@ -1048,10 +1048,10 @@ applyButton.onclick = applyAdvisory;
 const historyItemHtml = (advisory) => {
     const meta = [];
     if (advisory.cve.trim()) {
-        meta.push(`<span class="mono">${esc(advisory.cve.trim())}</span>`);
+        meta.push(`<span class="mono help small">${esc(advisory.cve.trim())}</span>`);
     }
     if (advisory.cwe.trim()) {
-        meta.push(`<span>${esc(advisory.cwe.trim())}</span>`);
+        meta.push(`<span class="mono help small">${esc(advisory.cwe.trim())}</span>`);
     }
     meta.push(
         `<span class="pill ${SEVERITY_CLASSES[advisory.severity] || "pill-gray"} plain">${capitalize(advisory.severity || "medium")}</span>`,
