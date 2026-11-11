@@ -2351,6 +2351,10 @@ textarea.input:focus {
     flex: 1 1 0;
 }
 
+.fix-pair .editor-head {
+    min-height: 38px;
+}
+
 .fix-pair .editor textarea {
     min-height: 170px;
     background: transparent;
@@ -2446,6 +2450,29 @@ textarea.input:focus {
 .pattern-row-head {
     align-items: center;
     min-height: 30px;
+}
+
+.validation-slot {
+    display: inline-flex;
+    flex: 0 0 auto;
+}
+
+.validation-slot:empty {
+    display: none;
+}
+
+.validation-badge {
+    flex: 0 0 auto;
+    font-variant-numeric: tabular-nums;
+}
+
+.validation-badge .spinner {
+    width: 12px;
+    min-width: 12px;
+    height: 12px;
+    border-width: 2px;
+    border-color: color-mix(in srgb, currentColor 25%, transparent);
+    border-top-color: currentColor;
 }
 
 .row-actions {

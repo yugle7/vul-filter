@@ -161,6 +161,14 @@ const PATTERN_PLACEHOLDERS = {
     ast: '\(INVOKE \(OBJECT _VAR_\) \(METHOD _CALL_\) \(ARGS _INT_\)\)',
 };
 
+// Stub validation pool. No scanning, GitLab, or LLM calls are made.
+const VALIDATION_PROJECTS = [
+    "https://gitlab.example/acme/web",
+    "https://gitlab.example/acme/api",
+    "https://gitlab.example/acme/worker",
+    "https://gitlab.example/acme/infra",
+];
+
 let advisories = [];
 let draft = null;
 let lastLookupCve = "";
@@ -170,6 +178,8 @@ let toastTimer = null;
 let page = null;
 let link = null;
 let splitDrag = null;
+const validationRuns = new Map();
+let validationRunId = 0;
 
 // ==========================================================================
 // 2. HELPERS
@@ -196,6 +206,18 @@ const capitalize = (value) =>
 
 const countText = (count, one, many) =>
     `${count} ${count === 1 ? one : many}`;
+
+const validationBadgeHtml = (result) => {
+    if (!result) return "";
+    if (result.status === "pending") {
+        return '<span class="badge info validation-badge" role="status" aria-label="Validation pending" title="Validation pending"><span class="spinner" aria-hidden="true"></span></span>';
+    }
+    if (result.status === "failed") {
+        return '<span class="badge bad validation-badge" role="status" aria-label="Validation failed" title="Validation failed">Failed</span>';
+    }
+    if (result.status !== "completed") return "";
+    return `<span class="badge good validation-badge" role="status" aria-label="Validation complete: ${result.hit_rate_percent} percent hit rate" title="${result.hit_rate_percent}% hit rate across test projects">${result.hit_rate_percent}%</span>`;
+};
 
 const clone = (value) => JSON.parse(JSON.stringify(value));
 
@@ -416,6 +438,7 @@ const openAdvisory = (id) => {
     ensureRows(draft);
     lastLookupCve = draft.cve.trim().toUpperCase();
     applyStatus.textContent = "";
+    resumeValidations(draft);
     renderPage("advisory");
 };
 
@@ -542,6 +565,7 @@ const fixPairHtml = (pair, index) => {
             <div class="editor vulnerable">
                 <div class="editor-head">
                     <span class="code-label">Vulnerable code</span>
+                    <span class="validation-slot">${validationBadgeHtml(pair.validation_result)}</span>
                 </div>
                 <textarea rows="7" spellcheck="false"
                           placeholder="Code before the fix"
@@ -605,6 +629,10 @@ fixList.addEventListener("input", (e) => {
 
     const field = editor.classList.contains("vulnerable") ? "vulnerable" : "fixed";
     pair[field] = e.target.value;
+    if (field === "vulnerable") {
+        pair.validation_result = null;
+        pairEl.querySelector(".validation-slot").innerHTML = "";
+    }
 
     if (
         pairEl === fixList.lastElementChild &&
@@ -899,6 +927,7 @@ const patternRowHtml = (item, kind) => `
     <div class="pattern-row" data-id="${item.id}">
         <div class="pattern-row-head">
             <span class="label">${kind === "code" ? "Code pattern" : "AST pattern"}</span>
+            <span class="validation-slot">${validationBadgeHtml(item.validation_result)}</span>
             ${resultHtml(item)}
             <div class="row-actions">
                 <button class="row-action evaluate-pattern" type="button"
@@ -962,6 +991,8 @@ const bindPatternEvents = (container, kind) => {
 
         item.value = input.value;
         item.count = null;
+        item.validation_result = null;
+        rowEl.querySelector(".validation-slot").innerHTML = "";
         updateResult(rowEl, item);
         grow(input);
 
@@ -1085,6 +1116,126 @@ const hasDraftContent = () =>
     draft.astPatterns.some((pattern) => pattern.value.trim()) ||
     draft.slices.some((slice) => slice.value.trim());
 
+const validationItems = (advisory, kind) =>
+    kind === "code"
+        ? advisory.codePatterns
+        : kind === "ast"
+            ? advisory.astPatterns
+            : advisory.fixExamples;
+
+const validationValue = (item, kind) =>
+    kind === "fix" ? item.vulnerable : item.value;
+
+const updateValidationSlot = (kind, entityId) => {
+    const container =
+        kind === "fix"
+            ? fixList
+            : kind === "code"
+                ? codePatternsList
+                : astPatternsList;
+    const row = [...container.children].find(
+        (element) => element.dataset.id === entityId,
+    );
+    if (!row) return;
+
+    const item = validationItems(draft, kind).find(
+        (entry) => entry.id === entityId,
+    );
+    const slot = row.querySelector(".validation-slot");
+    if (item && slot) {
+        slot.innerHTML = validationBadgeHtml(item.validation_result);
+    }
+};
+
+const startValidations = (advisory) => {
+    const runs = [];
+
+    ["code", "ast", "fix"].forEach((kind) => {
+        validationItems(advisory, kind).forEach((item) => {
+            const value = validationValue(item, kind).trim();
+            if (!value || item.validation_result) return;
+
+            item.validation_result = {
+                status: "pending",
+                hit_rate_percent: null,
+                computed_at: null,
+            };
+            runs.push({
+                advisoryId: advisory.id,
+                kind,
+                entityId: item.id,
+                value,
+            });
+        });
+    });
+
+    return runs;
+};
+
+// Informational stub: no scanning, GitLab, or LLM calls.
+const scheduleValidation = (run) => {
+    const key = `${run.advisoryId}:${run.kind}:${run.entityId}`;
+    const token = ++validationRunId;
+    validationRuns.set(key, token);
+
+    const delay =
+        600 + VALIDATION_PROJECTS.length * 100 + Math.random() * 600;
+
+    setTimeout(() => {
+        if (validationRuns.get(key) !== token) return;
+        validationRuns.delete(key);
+
+        const failed = Math.random() < 0.1;
+        const result = {
+            status: failed ? "failed" : "completed",
+            hit_rate_percent: failed ? null : Math.floor(Math.random() * 101),
+            computed_at: Date.now(),
+        };
+
+        const advisory = advisories.find(
+            (item) => item.id === run.advisoryId,
+        );
+        if (!advisory) return;
+
+        const item = validationItems(advisory, run.kind).find(
+            (entry) => entry.id === run.entityId,
+        );
+        if (!item || validationValue(item, run.kind).trim() !== run.value) {
+            return;
+        }
+        item.validation_result = result;
+
+        if (draft.id === run.advisoryId) {
+            const draftItem = validationItems(draft, run.kind).find(
+                (entry) => entry.id === run.entityId,
+            );
+            if (
+                draftItem &&
+                validationValue(draftItem, run.kind).trim() === run.value
+            ) {
+                draftItem.validation_result = result;
+                updateValidationSlot(run.kind, run.entityId);
+            }
+        }
+
+        saveAdvisories();
+    }, delay);
+};
+
+const resumeValidations = (advisory) => {
+    ["code", "ast", "fix"].forEach((kind) => {
+        validationItems(advisory, kind).forEach((item) => {
+            if (item.validation_result?.status !== "pending") return;
+            scheduleValidation({
+                advisoryId: advisory.id,
+                kind,
+                entityId: item.id,
+                value: validationValue(item, kind).trim(),
+            });
+        });
+    });
+};
+
 const saveAdvisory = () => {
     const now = Date.now();
     if (!draft.id) {
@@ -1093,6 +1244,7 @@ const saveAdvisory = () => {
     }
     draft.updated = now;
 
+    const validations = startValidations(draft);
     const saved = clone(draft);
     const index = advisories.findIndex((item) => item.id === saved.id);
     if (index >= 0) advisories[index] = saved;
@@ -1100,6 +1252,12 @@ const saveAdvisory = () => {
     saveAdvisories();
     renderHistory();
     advisoryHeading.textContent = "Edit advisory";
+
+    validations.forEach((run) => {
+        updateValidationSlot(run.kind, run.entityId);
+        scheduleValidation(run);
+    });
+
     return saved;
 };
 
