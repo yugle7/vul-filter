@@ -2,7 +2,7 @@
   "name": "Vulnerability Triage",
   "short_name": "Triage",
   "description": "Advisory intake and candidate selection for vulnerability triage.",
-  "version": "11",
+  "version": "15",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

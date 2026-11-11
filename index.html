@@ -85,6 +85,32 @@
             </div>
         </section>
 
+        <section aria-labelledby="source-heading">
+            <div class="section-title">
+                <h2 id="source-heading">Source project</h2>
+                <span class="help">Repository and commit range used for generation</span>
+            </div>
+            <div class="card form">
+                <label class="field">
+                    <span class="label">Project URL</span>
+                    <input id="source-project" class="input" placeholder="https://github.com/org/repo"
+                           autocomplete="off" spellcheck="false">
+                </label>
+                <div class="form-row">
+                    <label class="field">
+                        <span class="label">Vulnerable commit</span>
+                        <input id="vulnerable-commit" class="input code-font"
+                               placeholder="SHA before the fix" autocomplete="off" spellcheck="false">
+                    </label>
+                    <label class="field">
+                        <span class="label">Fixed commit</span>
+                        <input id="fixed-commit" class="input code-font"
+                               placeholder="SHA after the fix" autocomplete="off" spellcheck="false">
+                    </label>
+                </div>
+            </div>
+        </section>
+
         <section aria-labelledby="fix-heading">
             <div class="section-title">
                 <h2 id="fix-heading">Fix examples</h2>
@@ -142,6 +168,13 @@
                 <div class="section-title-actions">
                     <span class="pill pill-gray plain"
                           title="Counts are generated locally in this build. Connect the pipeline API for real evaluation.">Demo</span>
+                    <button id="generate-slices" class="btn small" type="button"
+                            title="Generate code slices from vulnerable fix examples">
+                        <svg>
+                            <use href="sprite.svg#code"></use>
+                        </svg>
+                        Generate Code Slices
+                    </button>
                 </div>
             </div>
             <div id="code-slices" class="stack"></div>

@@ -273,6 +273,9 @@ const cweInput = $("cwe");
 const titleInput = $("title");
 const descriptionInput = $("description");
 const severitySegment = $("severity");
+const sourceProjectInput = $("source-project");
+const vulnerableCommitInput = $("vulnerable-commit");
+const fixedCommitInput = $("fixed-commit");
 const applyButton = $("apply");
 const applyStatus = $("apply-status");
 const toastEl = $("toast");
@@ -312,6 +315,9 @@ const blankAdvisory = () => ({
     title: "",
     description: "",
     severity: "medium",
+    sourceProject: "",
+    vulnerableCommit: "",
+    fixedCommit: "",
     fixSplit: 50,
     fixExamples: [blankFixExample()],
     projects: [blankProject()],
@@ -322,6 +328,9 @@ const blankAdvisory = () => ({
 
 const ensureRows = (advisory) => {
     advisory.fixSplit = advisory.fixSplit || 50;
+    advisory.sourceProject = advisory.sourceProject || "";
+    advisory.vulnerableCommit = advisory.vulnerableCommit || "";
+    advisory.fixedCommit = advisory.fixedCommit || "";
     ensureTrailingEmpty(
         advisory.fixExamples,
         blankFixExample,
@@ -430,6 +439,9 @@ const renderAdvisory = () => {
     titleInput.value = draft.title;
     descriptionInput.value = draft.description;
     setSegment(severitySegment, draft.severity, "severity");
+    sourceProjectInput.value = draft.sourceProject;
+    vulnerableCommitInput.value = draft.vulnerableCommit;
+    fixedCommitInput.value = draft.fixedCommit;
 
     renderFixExamples();
     renderProjects();
@@ -487,6 +499,18 @@ titleInput.addEventListener("input", () => {
 descriptionInput.addEventListener("input", () => {
     draft.description = descriptionInput.value;
     grow(descriptionInput);
+});
+
+sourceProjectInput.addEventListener("input", () => {
+    draft.sourceProject = sourceProjectInput.value;
+});
+
+vulnerableCommitInput.addEventListener("input", () => {
+    draft.vulnerableCommit = vulnerableCommitInput.value;
+});
+
+fixedCommitInput.addEventListener("input", () => {
+    draft.fixedCommit = fixedCommitInput.value;
 });
 
 severitySegment.addEventListener("click", (e) => {
@@ -827,6 +851,38 @@ sliceList.addEventListener("click", (e) => {
     );
     renderSnippets();
 });
+
+const generateSlices = () => {
+    const candidates = draft.fixExamples
+        .map((pair) => pair.vulnerable.trim())
+        .filter(Boolean);
+
+    if (!candidates.length) {
+        toast("Add vulnerable code to a fix example first.");
+        return;
+    }
+
+    const existing = draft.slices.filter((slice) => slice.value.trim());
+    const known = new Set(existing.map((slice) => slice.value.trim()));
+    const additions = [...new Set(candidates)].filter(
+        (value) => !known.has(value),
+    );
+
+    if (!additions.length) {
+        toast("No new code slices to add.");
+        return;
+    }
+
+    draft.slices = [
+        ...existing,
+        ...additions.map((value) => ({id: newId(), value, count: null})),
+        blankSnippet(),
+    ];
+    renderSnippets();
+    toast(`${countText(additions.length, "code slice", "code slices")} generated.`);
+};
+
+$("generate-slices").onclick = generateSlices;
 
 // ==========================================================================
 // 9. REGEX PATTERNS
