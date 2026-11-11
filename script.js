@@ -46,8 +46,8 @@ const PATTERN_LIBRARY = [
             String.raw`(?i)(?:execute|query|exec)\s*\(\s*["'][\s\S]{0,120}(?:\+|\$\{)`,
         ],
         ast: [
-            String.raw`BinaryExpression[operator="+"] Literal`,
-            String.raw`CallExpression[callee.name=/(?:query|execute|exec)$/]`,
+            String.raw`\\(ASSIGN \\(LHS \\(VAR _X_\\)\\) \\(RHS \\(BINOP \\+ \\(VAR _X_\\) _ANY_\\)\\)\\)`,
+            String.raw`\\(INVOKE \\(OBJECT _VAR_\\) \\(METHOD _CALL_\\) \\(ARGS _INT_\\)\\)`,
         ],
     },
     {
@@ -57,8 +57,8 @@ const PATTERN_LIBRARY = [
             String.raw`\b(?:os\.system|subprocess\.(?:call|run|Popen)|ProcessBuilder)\b`,
         ],
         ast: [
-            String.raw`CallExpression[callee.name=/(?:exec|execSync|spawn|system|popen)$/]`,
-            String.raw`NewExpression[callee.name="ProcessBuilder"]`,
+            String.raw`\\(INVOKE \\(OBJECT _VAR_\\) \\(METHOD _CALL_\\) \\(ARGS _INT_\\)\\)`,
+            String.raw`\\(ASSIGN \\(LHS \\(VAR _X_\\)\\) \\(RHS \\(BINOP \\+ \\(VAR _X_\\) _ANY_\\)\\)\\)`,
         ],
     },
     {
@@ -158,7 +158,7 @@ const CODE_KEYWORDS = new Set([
 
 const PATTERN_PLACEHOLDERS = {
     code: String.raw`\bstrcpy\s*\(`,
-    ast: 'CallExpression[callee.name="strcpy"]',
+    ast: '\(INVOKE \(OBJECT _VAR_\) \(METHOD _CALL_\) \(ARGS _INT_\)\)',
 };
 
 let advisories = [];
@@ -281,7 +281,7 @@ const fixList = $("fix-examples");
 const projectList = $("evaluation-projects");
 const codePatternsList = $("code-patterns");
 const astPatternsList = $("ast-patterns");
-const snippetList = $("code-snippets");
+const sliceList = $("code-slices");
 const historyList = $("history-list");
 const historySearch = $("history-search");
 const historySearchClear = $("history-search-clear");
@@ -317,7 +317,7 @@ const blankAdvisory = () => ({
     projects: [blankProject()],
     codePatterns: [blankPattern()],
     astPatterns: [blankPattern()],
-    snippets: [blankSnippet()],
+    slices: [blankSnippet()],
 });
 
 const ensureRows = (advisory) => {
@@ -343,7 +343,7 @@ const ensureRows = (advisory) => {
         (row) => !row.value.trim(),
     );
     ensureTrailingEmpty(
-        advisory.snippets,
+        advisory.slices,
         blankSnippet,
         (row) => !row.value.trim(),
     );
@@ -501,7 +501,7 @@ window.addEventListener("resize", () => {
     grow(descriptionInput);
     growAll(codePatternsList);
     growAll(astPatternsList);
-    growAll(snippetList);
+    growAll(sliceList);
 });
 
 // ==========================================================================
@@ -663,7 +663,7 @@ fixList.addEventListener("keydown", (e) => {
 });
 
 // ==========================================================================
-// 8. EVALUATION PROJECTS AND SNIPPETS
+// 8. EVALUATION PROJECTS AND SLICES
 // ==========================================================================
 
 const projectRowHtml = (project) => `
@@ -750,78 +750,78 @@ const evaluateItem = (rowEl, item, emptyMessage) => {
 };
 
 const evaluateSnippet = (rowEl) => {
-    const snippet = draft.snippets.find(
+    const slice = draft.slices.find(
         (item) => item.id === rowEl.dataset.id,
     );
-    if (snippet) evaluateItem(rowEl, snippet, "Enter a snippet to evaluate.");
+    if (slice) evaluateItem(rowEl, slice, "Enter a slice to evaluate.");
 };
 
-const snippetRowHtml = (snippet) => `
-    <div class="pattern-row snippet-row" data-id="${snippet.id}">
+const sliceRowHtml = (slice) => `
+    <div class="pattern-row slice-row" data-id="${slice.id}">
         <div class="pattern-row-head">
-            <span class="label">Code snippet</span>
-            ${resultHtml(snippet)}
+            <span class="label">Code slice</span>
+            ${resultHtml(slice)}
             <div class="row-actions">
-                <button class="row-action evaluate-snippet" type="button"
-                        title="Evaluate code snippet" aria-label="Evaluate code snippet">
+                <button class="row-action evaluate-slice" type="button"
+                        title="Evaluate code slice" aria-label="Evaluate code slice">
                     <svg>
                         <use href="sprite.svg#play"></use>
                     </svg>
                 </button>
-                <button class="row-action remove-button" type="button" title="Remove snippet"
-                        aria-label="Remove vulnerable code snippet">
+                <button class="row-action remove-button" type="button" title="Remove slice"
+                        aria-label="Remove vulnerable code slice">
                     <svg>
                         <use href="sprite.svg#trash"></use>
                     </svg>
                 </button>
             </div>
         </div>
-        <textarea class="input code-font snippet-input auto-grow" rows="1"
+        <textarea class="input code-font slice-input auto-grow" rows="1"
                   placeholder="Paste a vulnerable code slice"
-                  aria-label="Vulnerable code snippet"
-                  autocomplete="off" spellcheck="false">${esc(snippet.value)}</textarea>
+                  aria-label="Vulnerable code slice"
+                  autocomplete="off" spellcheck="false">${esc(slice.value)}</textarea>
     </div>`;
 
 const renderSnippets = () => {
-    snippetList.innerHTML = draft.snippets.map(snippetRowHtml).join("");
-    growAll(snippetList);
+    sliceList.innerHTML = draft.slices.map(sliceRowHtml).join("");
+    growAll(sliceList);
 };
 
-snippetList.addEventListener("input", (e) => {
+sliceList.addEventListener("input", (e) => {
     if (!e.target.classList.contains("input")) return;
 
-    const rowEl = e.target.closest(".snippet-row");
-    const snippet = draft.snippets.find((item) => item.id === rowEl.dataset.id);
-    if (!snippet) return;
+    const rowEl = e.target.closest(".slice-row");
+    const slice = draft.slices.find((item) => item.id === rowEl.dataset.id);
+    if (!slice) return;
 
-    snippet.value = e.target.value;
-    snippet.count = null;
-    updateResult(rowEl, snippet);
+    slice.value = e.target.value;
+    slice.count = null;
+    updateResult(rowEl, slice);
     grow(e.target);
-    if (rowEl === snippetList.lastElementChild && snippet.value.trim()) {
+    if (rowEl === sliceList.lastElementChild && slice.value.trim()) {
         const next = blankSnippet();
-        draft.snippets.push(next);
-        snippetList.insertAdjacentHTML("beforeend", snippetRowHtml(next));
-        grow(snippetList.lastElementChild.querySelector("textarea"));
+        draft.slices.push(next);
+        sliceList.insertAdjacentHTML("beforeend", sliceRowHtml(next));
+        grow(sliceList.lastElementChild.querySelector("textarea"));
     }
 });
 
-snippetList.addEventListener("click", (e) => {
-    const evaluate = e.target.closest(".evaluate-snippet");
+sliceList.addEventListener("click", (e) => {
+    const evaluate = e.target.closest(".evaluate-slice");
     if (evaluate) {
-        evaluateSnippet(evaluate.closest(".snippet-row"));
+        evaluateSnippet(evaluate.closest(".slice-row"));
         return;
     }
 
     const button = e.target.closest(".remove-button");
     if (!button) return;
 
-    const rowEl = button.closest(".snippet-row");
-    draft.snippets = draft.snippets.filter(
+    const rowEl = button.closest(".slice-row");
+    draft.slices = draft.slices.filter(
         (item) => item.id !== rowEl.dataset.id,
     );
     ensureTrailingEmpty(
-        draft.snippets,
+        draft.slices,
         blankSnippet,
         (row) => !row.value.trim(),
     );
@@ -971,7 +971,7 @@ const generatePatterns = (kind) => {
         candidates.push(
             kind === "code"
                 ? `\\b${escapeRegExp(name)}\\s*\\(`
-                : `CallExpression[callee.name="${name}"]`,
+                : `\(INVOKE \(OBJECT _VAR_\) \(METHOD _CALL_\) \(ARGS _INT_\)\)`,
         );
     });
 

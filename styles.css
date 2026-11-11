@@ -2242,6 +2242,7 @@ textarea.input:focus {
     color: var(--help);
     font-size: 11px;
     line-height: 1.4;
+    padding-top: 10px;
 }
 
 .page-head > div {
@@ -2431,7 +2432,7 @@ textarea.input:focus {
     stroke: currentColor;
 }
 
-/* Regex patterns and evaluable snippets */
+/* Regex patterns and evaluable slices */
 .pattern-row-head {
     align-items: center;
     min-height: 30px;
@@ -2463,7 +2464,7 @@ textarea.input:focus {
 }
 
 .row-action.evaluate-pattern:hover,
-.row-action.evaluate-snippet:hover {
+.row-action.evaluate-slice:hover {
     color: var(--accent);
 }
 
@@ -2491,7 +2492,7 @@ textarea.input:focus {
 }
 
 .pattern-input,
-.snippet-input {
+.slice-input {
     overflow-wrap: anywhere;
     white-space: pre-wrap;
 }
