@@ -19,6 +19,8 @@
     --sky: #4fa9cc;
     --pink: #e0879d;
 
+    --fix-split: 50%;
+
     --accent: var(--blue);
     --radius: 12px;
     --content: 760px;
