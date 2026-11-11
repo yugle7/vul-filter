@@ -325,9 +325,9 @@ const blankFixExample = () => ({
 
 const blankProject = () => ({id: newId(), value: ""});
 
-const blankPattern = () => ({id: newId(), value: "", count: null});
+const blankPattern = () => ({id: newId(), value: ""});
 
-const blankSnippet = () => ({id: newId(), value: "", count: null});
+const blankSnippet = () => ({id: newId(), value: ""});
 
 const blankAdvisory = () => ({
     id: null,
@@ -768,71 +768,23 @@ projectList.addEventListener("click", (e) => {
     renderProjects();
 });
 
-const resultHtml = (item) =>
-    item.count == null
-        ? '<span class="pattern-result help tiny" role="status">Not evaluated</span>'
-        : `<span class="pattern-result pill pill-blue plain" role="status"
-                 title="${item.count} candidate functions"><b>${item.count}</b> candidates</span>`;
-
-const updateResult = (rowEl, item) => {
-    rowEl.querySelector(".pattern-result").outerHTML = resultHtml(item);
-};
-
-// Local preview only. The connected pipeline returns the real candidate count.
-const demoCount = (pattern, projects) => {
-    if (!projects.length) return 0;
-    let hash = 2166136261;
-    for (const char of `${pattern}\n${projects.join("\n")}`) {
-        hash ^= char.charCodeAt(0);
-        hash = Math.imul(hash, 16777619);
-    }
-    return ((hash >>> 0) % 37) + projects.length * 3;
-};
-
-const evaluateItem = (rowEl, item, emptyMessage) => {
-    if (!item.value.trim()) {
-        toast(emptyMessage);
-        return;
-    }
-
-    const projects = draft.projects
-        .map((project) => project.value.trim())
-        .filter(Boolean);
-    item.count = demoCount(item.value, projects);
-    updateResult(rowEl, item);
-};
-
-const evaluateSnippet = (rowEl) => {
-    const slice = draft.slices.find(
-        (item) => item.id === rowEl.dataset.id,
-    );
-    if (slice) evaluateItem(rowEl, slice, "Enter a slice to evaluate.");
-};
-
 const sliceRowHtml = (slice) => `
     <div class="pattern-row slice-row" data-id="${slice.id}">
         <div class="pattern-row-head">
             <span class="label">Code slice</span>
-            ${resultHtml(slice)}
-            <div class="row-actions">
-                <button class="row-action evaluate-slice" type="button"
-                        title="Evaluate code slice" aria-label="Evaluate code slice">
-                    <svg>
-                        <use href="sprite.svg#play"></use>
-                    </svg>
-                </button>
-                <button class="row-action remove-button" type="button" title="Remove slice"
-                        aria-label="Remove vulnerable code slice">
-                    <svg>
-                        <use href="sprite.svg#trash"></use>
-                    </svg>
-                </button>
-            </div>
+            <button class="remove-button input-remove" type="button" title="Remove slice"
+                    aria-label="Remove vulnerable code slice">
+                <svg>
+                    <use href="sprite.svg#trash"></use>
+                </svg>
+            </button>
         </div>
-        <textarea class="input code-font slice-input auto-grow" rows="1"
-                  placeholder="Paste a vulnerable code slice"
-                  aria-label="Vulnerable code slice"
-                  autocomplete="off" spellcheck="false">${esc(slice.value)}</textarea>
+        <div class="pattern-line">
+            <textarea class="input code-font slice-input auto-grow" rows="1"
+                      placeholder="Paste a vulnerable code slice"
+                      aria-label="Vulnerable code slice"
+                      autocomplete="off" spellcheck="false">${esc(slice.value)}</textarea>
+        </div>
     </div>`;
 
 const renderSnippets = () => {
@@ -848,8 +800,6 @@ sliceList.addEventListener("input", (e) => {
     if (!slice) return;
 
     slice.value = e.target.value;
-    slice.count = null;
-    updateResult(rowEl, slice);
     grow(e.target);
     if (rowEl === sliceList.lastElementChild && slice.value.trim()) {
         const next = blankSnippet();
@@ -860,12 +810,6 @@ sliceList.addEventListener("input", (e) => {
 });
 
 sliceList.addEventListener("click", (e) => {
-    const evaluate = e.target.closest(".evaluate-slice");
-    if (evaluate) {
-        evaluateSnippet(evaluate.closest(".slice-row"));
-        return;
-    }
-
     const button = e.target.closest(".remove-button");
     if (!button) return;
 
@@ -904,7 +848,7 @@ const generateSlices = () => {
 
     draft.slices = [
         ...existing,
-        ...additions.map((value) => ({id: newId(), value, count: null})),
+        ...additions.map((value) => ({id: newId(), value})),
         blankSnippet(),
     ];
     renderSnippets();
@@ -928,22 +872,12 @@ const patternRowHtml = (item, kind) => `
         <div class="pattern-row-head">
             <span class="label">${kind === "code" ? "Code pattern" : "AST pattern"}</span>
             <span class="validation-slot">${validationBadgeHtml(item.validation_result)}</span>
-            ${resultHtml(item)}
-            <div class="row-actions">
-                <button class="row-action evaluate-pattern" type="button"
-                        title="Evaluate ${kind === "code" ? "code pattern" : "AST pattern"}"
-                        aria-label="Evaluate ${kind === "code" ? "code pattern" : "AST pattern"}">
-                    <svg>
-                        <use href="sprite.svg#play"></use>
-                    </svg>
-                </button>
-                <button class="row-action remove-button" type="button" title="Remove pattern"
-                        aria-label="Remove pattern">
-                    <svg>
-                        <use href="sprite.svg#trash"></use>
-                    </svg>
-                </button>
-            </div>
+            <button class="remove-button input-remove" type="button" title="Remove pattern"
+                    aria-label="Remove pattern">
+                <svg>
+                    <use href="sprite.svg#trash"></use>
+                </svg>
+            </button>
         </div>
         <div class="pattern-line">
             <textarea class="input code-font pattern-input auto-grow" rows="1"
@@ -971,13 +905,6 @@ const appendPattern = (kind) => {
     grow(container.lastElementChild.querySelector(".pattern-input"));
 };
 
-const evaluatePattern = (kind, rowEl) => {
-    const item = patternRows(kind).find(
-        (entry) => entry.id === rowEl.dataset.id,
-    );
-    if (item) evaluateItem(rowEl, item, "Enter a pattern to evaluate.");
-};
-
 const bindPatternEvents = (container, kind) => {
     container.addEventListener("input", (e) => {
         const input = e.target.closest(".pattern-input");
@@ -990,10 +917,8 @@ const bindPatternEvents = (container, kind) => {
         if (!item) return;
 
         item.value = input.value;
-        item.count = null;
         item.validation_result = null;
         rowEl.querySelector(".validation-slot").innerHTML = "";
-        updateResult(rowEl, item);
         grow(input);
 
         if (rowEl === container.lastElementChild && input.value.trim()) {
@@ -1002,12 +927,6 @@ const bindPatternEvents = (container, kind) => {
     });
 
     container.addEventListener("click", (e) => {
-        const evaluate = e.target.closest(".evaluate-pattern");
-        if (evaluate) {
-            evaluatePattern(kind, evaluate.closest(".pattern-row"));
-            return;
-        }
-
         const remove = e.target.closest(".remove-button");
         if (!remove) return;
 
@@ -1077,7 +996,7 @@ const generatePatterns = (kind) => {
 
     const next = [
         ...existing,
-        ...additions.map((value) => ({id: newId(), value, count: null})),
+        ...additions.map((value) => ({id: newId(), value})),
         blankPattern(),
     ];
     if (kind === "code") draft.codePatterns = next;

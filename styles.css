@@ -2477,68 +2477,41 @@ textarea.input:focus {
     border-top-color: currentColor;
 }
 
-.row-actions {
-    display: none;
-    align-items: center;
-    gap: 2px;
-    margin-left: 4px;
-}
-
-.pattern-row:focus-within .row-actions {
-    display: flex;
-}
-
-.row-action {
-    display: grid;
-    flex: 0 0 auto;
-    place-items: center;
-    width: 30px;
-    height: 30px;
-    border-radius: 8px;
-    color: var(--help);
-}
-
-.row-action:hover {
-    background: var(--fade);
-}
-
-.row-action.evaluate-pattern:hover,
-.row-action.evaluate-slice:hover {
-    color: var(--accent);
-}
-
-.row-action.remove-button:hover {
-    color: var(--red);
-}
-
-.row-action svg {
-    width: 17px;
-    min-width: 17px;
-    height: 17px;
-    stroke: currentColor;
-}
-
 .pattern-line {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     gap: 9px;
 }
 
-.pattern-input {
+.pattern-line > .input {
     flex: 1;
     min-width: 0;
+}
+
+.pattern-input {
     font-size: 13px;
+}
+
+.input-remove {
+    width: 30px;
+    height: 30px;
+    margin-left: auto;
+    border-radius: 8px;
+    visibility: hidden;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.pattern-row:focus-within .input-remove {
+    visibility: visible;
+    opacity: 1;
+    pointer-events: auto;
 }
 
 .pattern-input,
 .slice-input {
     overflow-wrap: anywhere;
     white-space: pre-wrap;
-}
-
-.pattern-result {
-    margin-left: auto;
-    text-align: right;
 }
 
 @media (max-width: 640px) {
